@@ -3,7 +3,14 @@
 """ Provide different types of report generator """
 
 
-def html_report(report, filename="output.html"):
+from __future__ import unicode_literals
+from __future__ import print_function
+
+
+def html_report(report, filename=None):
+
+	if filename is None:
+		filename = "output.html"
 
 	def make_row(item):
 		""" Make one table row from one report item """
