@@ -11,6 +11,8 @@ import sys
 import json
 import itertools
 
+import reporters
+
 
 def parse_args():
 	parser = argparse.ArgumentParser(
@@ -68,23 +70,15 @@ def run_compare(tool, sources_file, tool_args):
 	return sorted(result, key=lambda x: x["similarity"])
 
 
-def print_html_report(report, file="output.html"):
-	raise NotImplementedError()
-
-
-def print_json_report(report, file="output.json"):
-	raise NotImplementedError()
-
-
 def main():
 	args = parse_args()
 
 	report = run_compare(args.tool, args.source_list)
 
 	if args.report_type == "html":
-		print_html_report(report, args.file)
+		reporters.html_report(report, args.file)
 	else:
-		print_json_report(report, args.file)
+		reporters.json_report(report, args.file)
 
 
 if __name__ == "__main__":
