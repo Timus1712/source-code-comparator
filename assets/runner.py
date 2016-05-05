@@ -12,7 +12,45 @@ import subprocess
 import json
 import itertools
 
+import threading
+import Queue
+
 import reporters
+
+
+def _multi_run(fn, data, threads=5):
+	results = []
+
+	def worker(q):
+		while True:
+			try:
+				item = q.get(False)
+			except Queue.Empty:
+				break
+
+			similarity = fn(item[0], item[1])
+			results.append({
+				"source1": item[0],
+				"source2": item[1],
+				"similarity": similarity
+			})
+
+	q = Queue.Queue()
+	for item in data:
+		q.put(item)
+
+	thread_pool = []
+	try:
+		for i in range(threads):
+			thread = threading.Thread(target=worker, args=(q,))
+			thread_pool.append(thread)
+			thread.start()
+	finally:
+		for t in thread_pool:
+			if t and t.isAlive():
+				t.join()
+
+	return results
 
 
 def parse_args():
@@ -27,9 +65,10 @@ def parse_args():
 	return parser.parse_args()
 
 
-def run_comparator(tool, source1_path, source2_path):
-	s = subprocess.Popen([ tool, source1_path, source2_path ], shell=True,
-		stdout=subprocess.PIPE)
+def run_comparator(tool, source1, source2):
+	print("Comparing '{0}' : '{1}'".format(source1["name"], source2["name"]))
+	s = subprocess.Popen([tool, source1["path"], source2["path"]], shell=False,
+		stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	result = s.stdout.read()
 	return float(result)
 
@@ -59,14 +98,16 @@ def run_compare(tool, sources_file, tool_args=None):
 
 	result = []
 
-	for source1, source2 in itertools.combinations(sources, r=2):
-		print("Comparing '{0}' : '{1}'".format(source1["name"], source2["name"]))
-		similarity = run_comparator(tool, source1["path"], source2["path"])
-		result.append({
-			"source1": source1,
-			"source2": source2,
-			"similarity": similarity
-		})
+	result = _multi_run(lambda x, y: run_comparator(tool, x, y),
+		itertools.combinations(sources, r=2))
+
+	# for source1, source2 in itertools.combinations(sources, r=2):
+	# 	similarity = run_comparator(tool, source1["path"], source2["path"])
+	# 	result.append({
+	# 		"source1": source1,
+	# 		"source2": source2,
+	# 		"similarity": similarity
+	# 	})
 
 	return sorted(result, key=lambda x: x["similarity"])
 

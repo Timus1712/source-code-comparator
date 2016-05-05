@@ -26,7 +26,7 @@ def html_report(report, filename=None):
 				source1_name=item["source1"]["name"],
 				source2_name=item["source2"]["name"],
 				similarity=item["similarity"],
-				color="#FF0000" if item["similarity"] > 0.5 else "#00FF00"
+				color="hsl({0}, 84%, 83%)".format(100 - int(float(item["similarity"]) * 100))
 			)
 
 	HTML_HEADER = """
